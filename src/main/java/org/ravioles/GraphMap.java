@@ -7,7 +7,7 @@ import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.MultiGraph;
 import org.graphstream.ui.spriteManager.Sprite;
 import org.graphstream.ui.spriteManager.SpriteManager;
-import org.ravioles.agents.TrafficLight;
+import org.ravioles.agents.Intersection;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,14 +16,12 @@ import java.util.List;
 
 public class GraphMap {
     Graph graph;
-    Timer timer;
     SpriteManager sman;
-    List<TrafficLight> trafficLights = new ArrayList<>();
+    List<Intersection> intersections = new ArrayList<>();
     HashMap<Edge, Integer> roadPassiblities = new HashMap<>();
 
-    public GraphMap(Timer timer) {
+    public GraphMap() {
         this.graph = new MultiGraph("Traffic Management System");
-        this.timer = timer;
         this.sman = new SpriteManager(graph);
 
 //        List<String> cols = List.of("a", "b", "c", "d", "e", "f", "g", "h");
@@ -51,7 +49,9 @@ public class GraphMap {
                     src = col + (r + 1);
                     dst = col + r;
                 }
-                graph.addEdge(src + dst, src, dst, true);
+                Edge e = graph.addEdge(src + dst, src, dst, true);
+                e.setAttribute("distance", 10.0); // each edge has a distance which by default is 10
+                e.setAttribute("congestion", 0.0); // this shall be the index of certain number
             }
         }
 
@@ -65,39 +65,28 @@ public class GraphMap {
                 String src = order.get(j) + r;
                 String dst = order.get(j + 1) + r;
                 Edge e = graph.addEdge(src + dst, src, dst, true);
-                e.setAttribute("distance", 10); // each edge has a distance which by default is 10
-                e.setAttribute("congestion", 0); // this shall be the index of certain number
+                e.setAttribute("distance", 10.0);
+                e.setAttribute("congestion", 0.0);
             }
         }
 
-//        Node a3 = graph.getNode("a3");
-//        a3.setAttribute("ui.style", "fill-color: rgb(255,0,0);");
-//        Edge a3b3 = a3.getEdgeBetween(graph.getNode("b3").getId());
-//        System.out.println(a3b3.getId());
-
-//        List<String> edges = new ArrayList<>();
-//        for (Edge e : graph.getNode("c2").getEachLeavingEdge()) {
-//            edges.add(e.getId());
-//        }
-//        System.out.println(edges);
-//        System.out.println((graph.getEdge("c2c3").getSourceNode().getId()));
-
-        //        for (Node n : graph.getEachNode()) {
-//            System.out.println(n.getId());
-//        }
-//
-//        for (Edge e : graph.getEachEdge()) {
-//            System.out.println(e.getId());
-//        }
-
+        addTrafficLight(new Intersection
+                (
+                this,
+                graph.getNode("c2"),
+                graph.getNode("b2"),
+                graph.getNode("b3"),
+                graph.getNode("c3")
+                )
+        );
     }
 
-    public void addTrafficLight(TrafficLight tl) {
-        this.trafficLights.add(tl);
+    public void addTrafficLight(Intersection tl) {
+        this.intersections.add(tl);
         this.initIntersection(tl);
     }
 
-    public void initIntersection(TrafficLight tl) {
+    public void initIntersection(Intersection tl) {
 
         Node tl1 = tl.getTL1();
         Node tl2 = tl.getTL2();
@@ -115,8 +104,8 @@ public class GraphMap {
         intersections.addAll(List.of(l13, l24, l31, l42));
 
         for (Edge e : intersections) {
-            e.setAttribute("distance", 1);
-            e.setAttribute("congestion", 0);
+            e.setAttribute("distance", 1.0);
+            e.setAttribute("congestion", 0.0);
         }
     }
 
@@ -138,7 +127,7 @@ public class GraphMap {
     public void updateCongestion() {
         List<Edge> intersections = new ArrayList<>();
 
-        for (TrafficLight tl : trafficLights) {
+        for (Intersection tl : this.intersections) {
             intersections.addAll(tl.getIntersections());
         }
 
@@ -149,15 +138,15 @@ public class GraphMap {
 
             if (attach instanceof Edge) {
                 Edge e = (Edge) attach;
-                if (!intersections.contains(e)) {
+                if (!intersections.contains(e)) { // the congestion level of an intersection shall always be 0
                     Integer cnt = e.getAttribute("congestion");
-                    e.setAttribute("congestion", (cnt == null ? 0 : cnt) + 1);
+                    e.setAttribute("congestion", (cnt == null ? 0.0 : cnt) + 1.0);
                 }
             } else if (attach instanceof Node n) {
                 for (Edge e : n.getEachLeavingEdge()) {
                     if (!intersections.contains(e)) {
                         Integer cnt = e.getAttribute("congestion");
-                        e.setAttribute("congestion", (cnt == null ? 0 : cnt) + 1);
+                        e.setAttribute("congestion", (cnt == null ? 0.0 : cnt) + 1.0);
                     }
                 }
             }

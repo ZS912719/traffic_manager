@@ -1,31 +1,31 @@
 package org.ravioles.agents;
 
 import org.graphstream.graph.Edge;
-import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
+import org.ravioles.GraphMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TrafficLight {
+public class Intersection {
     private final Map<String, Map<String, List<Transition>>> transitions;
     Node tl1;
     Node tl2;
     Node tl3;
     Node tl4;
-    Graph graph;
-    List<String> actions = List.of("a_1100", "a_0100", "a_1000", "a_0011", "a_0010", "a_0001");
-    // Explanation by example: a_0100 means road 1,3,4 are not passable while road 2 is passable.
-    // The option should be seen as action_(1)0(2)1(3)0(4)0 where 0 means not passable and 1 means passable.
+    GraphMap graph;
+    List<String> actions = List.of("a_10", "a_10?", "a_01", "a_01?");
+    // Explanation by example: a_01 means road 1,3 are passable while road 2,4 are not.
+    // Action "a_01?" means road 1,3 are passable while road 2,4 are not but they are switching (orange light).
     String action;
     List<Edge> intersections;
     ArrayList<String> states = new ArrayList<String>();
     String state;
     int timer = 0; // universal ticking timer , updated by the class Timer of this project
 
-    public TrafficLight(Graph graph, Node tl1, Node tl2, Node tl3, Node tl4) {
+    public Intersection(GraphMap graph, Node tl1, Node tl2, Node tl3, Node tl4) {
         this.transitions = new HashMap<>();
 
         this.graph = graph;
@@ -42,12 +42,15 @@ public class TrafficLight {
     public Node getTL1() {
         return this.tl1;
     }
+
     public Node getTL2() {
         return this.tl2;
     }
+
     public Node getTL3() {
         return this.tl3;
     }
+
     public Node getTL4() {
         return this.tl4;
     }
