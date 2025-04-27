@@ -70,30 +70,21 @@ public class GraphMap {
             }
         }
 
-        addTrafficLight(new Intersection
-                (
-                this,
-                graph.getNode("c2"),
-                graph.getNode("b2"),
-                graph.getNode("b3"),
-                graph.getNode("c3")
-                )
-        );
     }
 
-    public void addTrafficLight(Intersection tl) {
-        this.intersections.add(tl);
-        this.initIntersection(tl);
+    public void addTrafficLight(Intersection intersection) {
+        this.intersections.add(intersection);
+        this.initIntersection(intersection);
     }
 
-    public void initIntersection(Intersection tl) {
+    public void initIntersection(Intersection intersection) {
 
-        Node tl1 = tl.getTL1();
-        Node tl2 = tl.getTL2();
-        Node tl3 = tl.getTL3();
-        Node tl4 = tl.getTL4();
+        Node tl1 = intersection.getTL1();
+        Node tl2 = intersection.getTL2();
+        Node tl3 = intersection.getTL3();
+        Node tl4 = intersection.getTL4();
 
-        List<Edge> intersections = new ArrayList<>(tl.getIntersections());
+        List<Edge> intersections = new ArrayList<>(intersection.getIntersections());
 
         // Add left-turns
         Edge l13 = graph.addEdge("L" + tl1.getId() + tl3.getId(), tl1, tl3, true);
@@ -127,8 +118,8 @@ public class GraphMap {
     public void updateCongestion() {
         List<Edge> intersections = new ArrayList<>();
 
-        for (Intersection tl : this.intersections) {
-            intersections.addAll(tl.getIntersections());
+        for (Intersection intersection : this.intersections) {
+            intersections.addAll(intersection.getIntersections());
         }
 
         for (Sprite s : sman.sprites()) {
@@ -158,5 +149,18 @@ public class GraphMap {
      */
     public double calculatePassibility(Edge e) {
         return ((double) e.getAttribute("distance")) * Math.pow(1.5, e.getAttribute("congestion"));
+    }
+
+    public List<Sprite> getSprites(){
+        List<Sprite> sprites = new ArrayList<>();
+        for (Sprite s : sman.sprites()) {
+            if (!s.attached()) continue;
+            sprites.add(s);
+        }
+        return sprites;
+    }
+
+    public List<Intersection> getIntersections() {
+        return this.intersections;
     }
 }
