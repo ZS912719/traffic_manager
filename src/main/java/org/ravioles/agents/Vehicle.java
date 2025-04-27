@@ -1,6 +1,7 @@
 package org.ravioles.agents;
 
 import org.graphstream.graph.Edge;
+import org.graphstream.graph.Element;
 import org.graphstream.graph.Node;
 import org.graphstream.ui.spriteManager.Sprite;
 import org.graphstream.ui.spriteManager.SpriteManager;
@@ -12,32 +13,31 @@ import org.ravioles.agents.intentions.IntentionExecutor;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
 import java.util.Queue;
-
-import static java.lang.Thread.sleep;
 
 
 public class Vehicle implements ActionListener {
     private final Timer timer;
     GraphMap graph;
     Sprite vehicle;
-    List<String> vehicleStates = List.of("DRIVING", "WAITING", "PARKED");
-    String currentState;
+    double givenSpeed;
+    SpriteManager sman;
+
     Node startNode;
     Node departureNode;
     Node nextNode;
     Node endNode;
-    double speed;
     IntentionExecutor intentionExecutor;
     BeliefBase beliefBase;
     double positionOnRoad = 0;
     int timeOnRoad = 0;
+    int movingTime = 0;
     int currentTick;
 
     public Vehicle(GraphMap graph, SpriteManager sman, String name, Node startNode, Node endNode, double speed, Timer timer) {
         this.graph = graph;
-        this.vehicle = sman.addSprite(name);
+        this.sman = sman;
+        this.vehicle = this.sman.addSprite(name);
 
 //        this.vehicle.setAttribute("ui.label", name);
         this.vehicle.setAttribute("ui.style", "fill-color: rgb(0,0,255);");
@@ -47,9 +47,8 @@ public class Vehicle implements ActionListener {
         this.endNode = endNode;
         this.vehicle.attachToNode(startNode.getId());
 
-        this.speed = speed;
-
-        this.currentState = vehicleStates.get(0);
+        this.givenSpeed = speed;
+        this.vehicle.setAttribute("speed", speed);
 
         this.beliefBase = new BeliefBase(this.graph, this);
         this.intentionExecutor = new IntentionExecutor(this.beliefBase, startNode, endNode);
@@ -74,62 +73,103 @@ public class Vehicle implements ActionListener {
     }
 
     public void act() {
+        this.beliefBase.watchLight();
+        this.beliefBase.finishVehicle();
+
         if (isAtEnd()) {
             timer.removeActionListener(this);
+            ajustSpeed();
             return;
         }
-        if (vehicle.getAttachment() instanceof Node) {
+        Element attachment = vehicle.getAttachment();
+        if (attachment instanceof Node) {
             setNextNode();
             this.timeOnRoad = 0;
             if (!isAtEnd()) {
                 Edge route = getCurrentRoute();
-//                vehicle.detach();
                 vehicle.attachToEdge(route.getId());
-                move();
             }
         }
 
-        if (vehicle.getAttachment() instanceof Edge) {
+        if (attachment instanceof Edge) {
             move();
         }
     }
 
     public void setNextNode() {
         Queue<Node> intentions = this.intentionExecutor.getIntentions();
-        if (!intentionExecutor.isArrived() && !intentions.isEmpty()) {
+        if (!intentions.isEmpty()) {
             this.nextNode = intentions.poll();
-            intentionExecutor.setIsArrived(intentions.isEmpty());
         }
     }
 
     public Edge getCurrentRoute() {
-        return this.departureNode.getEdgeBetween(this.nextNode.getId());
+        return this.departureNode.getEdgeToward(this.nextNode.getId());
     }
 
     public void move() {
         Edge route = getCurrentRoute();
         double distance = route.getAttribute("distance");
-        this.positionOnRoad = (speed * timeOnRoad) / distance;
-        vehicle.setPosition(positionOnRoad);
+        double speed = vehicle.getAttribute("speed");
+        if (speed == 0) {
+            vehicle.setPosition(positionOnRoad);
+        } else {
+            this.positionOnRoad = (((double) this.vehicle.getAttribute("speed")) * movingTime) / distance;
+            vehicle.setPosition(positionOnRoad);
+            this.movingTime ++;
+        }
 
         if (positionOnRoad >= 1.0) {
-            vehicle.detach();
             vehicle.attachToNode(route.getTargetNode().getId());
             departureNode = nextNode;
             timeOnRoad = 0;
+            movingTime = 0;
             positionOnRoad = 0;
             vehicle.setPosition(positionOnRoad);
+        }
+    }
 
+    public void ajustSpeed() {
+        switch (beliefBase.getCurrentState()) {
+            case "DRIVING":
+                this.vehicle.setAttribute("speed", this.givenSpeed);
+                break;
+            case "WAITING":
+                this.vehicle.setAttribute("speed", 0.0);
+                break;
+            case "PARKED":
+                this.vehicle.detach();
+                this.sman.removeSprite(this.vehicle.getId());
+                break;
         }
     }
 
     public boolean isAtEnd() {
-        return this.intentionExecutor.isArrived() && this.departureNode.equals(this.endNode);
+        return this.beliefBase.isArrived();
     }
 
+    public double getGivenSpeed() {
+        return this.givenSpeed;
+    }
 
-    public void updateVehicleState(String newState) {
-        this.currentState = newState;
+    public Node getDepartureNode() {
+        return this.departureNode;
+    }
+
+    public Node getNextNode() {
+        return this.nextNode;
+    }
+
+    public Node getEndNode() {
+        return this.endNode;
+    }
+
+    public double getPositionOnRoad() {
+        return this.positionOnRoad;
+    }
+
+    public int getTimeOnRoad() {
+        return this.timeOnRoad;
     }
 
 }
