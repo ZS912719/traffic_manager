@@ -12,7 +12,6 @@ public class IntentionExecutor {
     DjikstraCalculator planner;
     BeliefBase beliefs;
     private Queue<Node> intentions = new LinkedList<>();
-    private boolean arrived = false;
     Node position;
     Node desire;
 
@@ -30,7 +29,6 @@ public class IntentionExecutor {
         if (!path.isEmpty()) {
             intentions = new LinkedList<>(path);
         }
-        arrived = intentions.isEmpty();
     }
 
     public Node getPosition() {
@@ -41,15 +39,8 @@ public class IntentionExecutor {
         return this.desire;
     }
 
-    public boolean isArrived() {
-        return this.arrived;
-    }
-
     public Queue<Node> getIntentions() {
         return this.intentions;
     }
 
-    public void setIsArrived(boolean isArrived) {
-        this.arrived = isArrived;
-    }
 }
