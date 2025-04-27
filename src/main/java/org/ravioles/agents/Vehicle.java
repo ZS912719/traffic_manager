@@ -1,61 +1,105 @@
 package org.ravioles.agents;
 
 import org.graphstream.graph.Edge;
-import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.ui.spriteManager.Sprite;
 import org.graphstream.ui.spriteManager.SpriteManager;
+import org.ravioles.GraphMap;
+import org.ravioles.Main;
+import org.ravioles.agents.beliefs.BeliefBase;
+import org.ravioles.agents.intentions.IntentionExecutor;
 
-import java.util.*;
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
+import java.util.Queue;
+
+import static java.lang.Thread.sleep;
 
 
-public class Vehicle {
-    //    private final BeliefBase beliefs = new BeliefBase();
-//    private final GoalManager goals = new GoalManager();
-//    private final IntentionExecutor intentions = new IntentionExecutor();
-    Graph graph;
+public class Vehicle implements ActionListener {
+    private final Timer timer;
+    GraphMap graph;
     Sprite vehicle;
     List<String> vehicleStates = List.of("DRIVING", "WAITING", "PARKED");
     String currentState;
+    Node startNode;
     Node departureNode;
     Node nextNode;
     Node endNode;
     double speed;
-    int timer = 0;
-    Map<Node, Double> distances = new HashMap<>();
-    Map<Node, Double> predecessors = new HashMap<>();
-    PriorityQueue<Node> queue = new PriorityQueue<>(
-            Comparator.comparingDouble(
-                    n -> distances.getOrDefault(n, Double.MAX_VALUE
-                    )
-            )); // compare by distance from start node
+    IntentionExecutor intentionExecutor;
+    BeliefBase beliefBase;
+    double positionOnRoad = 0;
+    int timeOnRoad = 0;
+    int currentTick;
 
-
-    public Vehicle(Graph graph, SpriteManager sman, String name, Node start, Node endNode, double speed) {
+    public Vehicle(GraphMap graph, SpriteManager sman, String name, Node startNode, Node endNode, double speed, Timer timer) {
         this.graph = graph;
         this.vehicle = sman.addSprite(name);
-        this.vehicle.setAttribute("ui.label", name);
+
+//        this.vehicle.setAttribute("ui.label", name);
         this.vehicle.setAttribute("ui.style", "fill-color: rgb(0,0,255);");
-        this.departureNode = start;
+
+        this.startNode = startNode;
+        this.departureNode = startNode;
         this.endNode = endNode;
-        this.vehicle.attachToNode(start.getId());
+        this.vehicle.attachToNode(startNode.getId());
+
         this.speed = speed;
+
         this.currentState = vehicleStates.get(0);
 
-        distances.put(start, 0.0);
-        queue.add(start);
+        this.beliefBase = new BeliefBase(this.graph, this);
+        this.intentionExecutor = new IntentionExecutor(this.beliefBase, startNode, endNode);
+
+        this.timer = timer;
+        timer.addActionListener(this);
     }
 
     public Sprite getVehicle() {
         return this.vehicle;
     }
 
-    public List<Edge> getPossibleRoutes() {
-        List<Edge> possibleRoutes = new ArrayList<>();
-        for (Edge e : this.departureNode.getEachLeavingEdge()) {
-            possibleRoutes.add(e);
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        int oldTick = this.currentTick;
+        this.currentTick = Main.tic;
+        int deltaTicks = this.currentTick - oldTick;
+
+        this.timeOnRoad += deltaTicks;
+
+        act();
+    }
+
+    public void act() {
+        if (isAtEnd()) {
+            timer.removeActionListener(this);
+            return;
         }
-        return possibleRoutes;
+        if (vehicle.getAttachment() instanceof Node) {
+            setNextNode();
+            this.timeOnRoad = 0;
+            if (!isAtEnd()) {
+                Edge route = getCurrentRoute();
+//                vehicle.detach();
+                vehicle.attachToEdge(route.getId());
+                move();
+            }
+        }
+
+        if (vehicle.getAttachment() instanceof Edge) {
+            move();
+        }
+    }
+
+    public void setNextNode() {
+        Queue<Node> intentions = this.intentionExecutor.getIntentions();
+        if (!intentionExecutor.isArrived() && !intentions.isEmpty()) {
+            this.nextNode = intentions.poll();
+            intentionExecutor.setIsArrived(intentions.isEmpty());
+        }
     }
 
     public Edge getCurrentRoute() {
@@ -63,44 +107,29 @@ public class Vehicle {
     }
 
     public void move() {
-        int distance = this.getCurrentRoute().getAttribute("distance");
-        this.vehicle.setPosition((this.speed * this.timer) / distance);
+        Edge route = getCurrentRoute();
+        double distance = route.getAttribute("distance");
+        this.positionOnRoad = (speed * timeOnRoad) / distance;
+        vehicle.setPosition(positionOnRoad);
+
+        if (positionOnRoad >= 1.0) {
+            vehicle.detach();
+            vehicle.attachToNode(route.getTargetNode().getId());
+            departureNode = nextNode;
+            timeOnRoad = 0;
+            positionOnRoad = 0;
+            vehicle.setPosition(positionOnRoad);
+
+        }
     }
 
     public boolean isAtEnd() {
-        return this.departureNode.getId().equals(this.endNode.getId());
+        return this.intentionExecutor.isArrived() && this.departureNode.equals(this.endNode);
     }
 
-    public void updateTimer() {
-
-    }
-
-    public void enterNextRoad(Edge next) {
-
-    }
-
-    public void planRoute() {
-
-    }
-
-    public int getPassedVehicleNumber(){
-        return 0;
-    }
-
-    private void printVehicleStatus() {
-
-    }
-
-    private String getNextTrafficLightState() {
-        return null;
-    }
 
     public void updateVehicleState(String newState) {
         this.currentState = newState;
-    }
-
-    public List<Node> calculateShortestPath(){
-        return new ArrayList<>();
     }
 
 }
