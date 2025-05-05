@@ -1,4 +1,4 @@
-package org.ravioles.utils.interpretors;
+package org.ravioles.interpretors;
 
 import org.ravioles.agents.beliefs.BeliefBase;
 
