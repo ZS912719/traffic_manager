@@ -6,7 +6,7 @@ import org.ravioles.GraphMap;
 
 import java.util.*;
 
-public class DjikstraCalculator {
+public class DijkstraCalculator {
 
     public GraphMap graph;
     Map<Node, Double> distances = new HashMap<>();
@@ -17,10 +17,19 @@ public class DjikstraCalculator {
                     )
             )); // compare by distance from start node
 
-    public DjikstraCalculator(GraphMap graph) {
+    public DijkstraCalculator(GraphMap graph) {
         this.graph = graph;
     }
 
+    /**
+     * Calculates the shortest path between a start node and an end node in a graph based on passibility
+     * (a measure derived from edge distance and congestion level). Uses Dijkstra's algorithm to determine
+     * the shortest path.
+     *
+     * @param start the starting node for the path calculation
+     * @param end the destination node for the path calculation
+     * @return a list of nodes representing the shortest path from the start node to the end node
+     */
     public List<Node> calculateShortestPath(Node start, Node end){
         distances.put(start, 0.0);
         queue.add(start);
@@ -43,6 +52,17 @@ public class DjikstraCalculator {
     }
 
 
+    /**
+     * Reconstructs the path between a start node and an end node using a map of predecessor nodes.
+     * The path is built by traversing the predecessors from the end node to the start node and
+     * then reversing the resulting list to get the correct sequence from start to end.
+     *
+     * @param predecessors a map where the key is a node and the value is its predecessor in the shortest path
+     * @param start the starting node of the path
+     * @param end the ending node of the path
+     * @return a list of nodes representing the path from the start node to the end node,
+     *         excluding the start node but including the end node
+     */
     public List<Node> reconstructPath(Map<Node, Node> predecessors, Node start, Node end) {
         List<Node> path = new ArrayList<>();
         for (Node node = end; node != start; node = predecessors.get(node)) {
