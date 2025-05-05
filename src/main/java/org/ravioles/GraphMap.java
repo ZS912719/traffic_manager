@@ -138,7 +138,7 @@ public class GraphMap implements ActionListener {
             intersections.addAll(intersection.getIntersections());
         }
 
-        for (Sprite s : sman.sprites()) {
+        for (Sprite s : this.sman.sprites()) {
             if (!s.attached()) continue;
 
             Element attach = s.getAttachment();
