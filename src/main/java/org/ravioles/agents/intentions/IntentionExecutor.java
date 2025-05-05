@@ -1,46 +1,34 @@
 package org.ravioles.agents.intentions;
 
-import org.graphstream.graph.Node;
-import org.ravioles.agents.DjikstraCalculator;
-import org.ravioles.agents.beliefs.BeliefBase;
-
+import org.ravioles.agents.Vehicle;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 public class IntentionExecutor {
-    DjikstraCalculator planner;
-    BeliefBase beliefs;
-    private Queue<Node> intentions = new LinkedList<>();
-    Node position;
-    Node desire;
+    Vehicle vehicle;
+    private List<String> intentions = new LinkedList<>();
 
-    public IntentionExecutor(BeliefBase beliefs,Node position, Node desire) {
-        this.beliefs = beliefs;
-        this.planner = new DjikstraCalculator(beliefs.getGraph());
-        this.position = position;
-        this.desire = desire;
-
-        generateIntention();
+    public IntentionExecutor(Vehicle vehicle) {
+        this.vehicle = vehicle;
     }
 
-    public void generateIntention() {
-        List<Node> path = this.planner.calculateShortestPath(position, desire);
-        if (!path.isEmpty()) {
-            intentions = new LinkedList<>(path);
+    public void enqueue(List<String> plan) {
+        intentions.addAll(plan);
+        if (intentions.isEmpty()) {
+            return;
         }
-    }
+        for (String intention : intentions) {
+            if (intention.equals("go")) {
+                this.vehicle.setCurrentState(this.vehicle.getVehicleStates().get(0)); // DRIVING
+                this.vehicle.adjustSpeed();
+            } else if (intention.equals("stop")) {
+                this.vehicle.setCurrentState(this.vehicle.getVehicleStates().get(1));// WAITING
+                this.vehicle.adjustSpeed();
+            } else if (intention.equals("fin")){
+                this.vehicle.setCurrentState(this.vehicle.getVehicleStates().get(2));// PARKED
+                this.vehicle.adjustSpeed();
+            }
+        }
 
-    public Node getPosition() {
-        return this.position;
     }
-
-    public Node getDesire() {
-        return this.desire;
-    }
-
-    public Queue<Node> getIntentions() {
-        return this.intentions;
-    }
-
 }
