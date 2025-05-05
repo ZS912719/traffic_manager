@@ -2,14 +2,11 @@ package org.ravioles;
 
 import org.graphstream.graph.Graph;
 import org.graphstream.ui.spriteManager.SpriteManager;
-import org.ravioles.agents.Intersection;
-import org.ravioles.agents.Vehicle;
+import org.ravioles.utils.VehicleBatchCreator;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
 
 import static java.lang.Thread.sleep;
 
@@ -28,38 +25,37 @@ public class Main{
         timer.start();
 
         System.setProperty("org.graphstream.ui", "swing");
-        GraphMap graphMap = new GraphMap();
+        GraphMap graphMap = new GraphMap(timer);
         Graph graph = graphMap.getGraph();
         SpriteManager sman = graphMap.getSpriteManager();
         graph.display();
 
-        Intersection i1 = new Intersection
-                (
-                        graphMap,
-                        graph.getNode("c2"),
-                        graph.getNode("b2"),
-                        graph.getNode("b3"),
-                        graph.getNode("c3")
-                );
+        String[][] intersections = {
+                {"c2","b2","b3","c3"},
+                {"c4","b4","b5","c5"},
+                {"c6","b6","b7","c7"},
+                {"e6","d6","d7","e7"},
+                {"e4","d4","d5","e5"},
+                {"e2","d2","d3","e3"},
+                {"g2","f2","f3","g3"},
+                {"g4","f4","f5","g5"},
+                {"g6","f6","f7","g7"}
+        };
 
-        graphMap.addTrafficLight(i1);
-        i1.toggleLight("s_10?");
+        for (String[] ids : intersections) {
+            Intersection inter = new Intersection(
+                    graphMap,
+                    graph.getNode(ids[0]),
+                    graph.getNode(ids[1]),
+                    graph.getNode(ids[2]),
+                    graph.getNode(ids[3]),
+                    timer
+            );
+            graphMap.addTrafficLight(inter);
+        }
 
-        List<Vehicle> vehicles = new ArrayList<>();
-
-        sleep(3000);
-        Vehicle car1 = new Vehicle(graphMap, sman, "Demo1", graph.getNode("b1"), graph.getNode("d4"), 0.2, timer);
-        vehicles.add(car1);
-
-        sleep(3000);
-        Vehicle car2 = new Vehicle(graphMap, sman, "Demo2", graph.getNode("d4"), graph.getNode("b1"), 0.2, timer);
-        vehicles.add(car2);
-
-        sleep(3000);
-        Vehicle car3 = new Vehicle(graphMap, sman, "Demo3", graph.getNode("c1"), graph.getNode("d4"), 0.2, timer);
-        vehicles.add(car3);
-
-        sleep(3000);
-        i1.toggleLight("s_01");
+        sleep(2000);
+//        Vehicle v = new Vehicle(graphMap, sman, "Demo1", graph.getNode("a2"), graph.getNode("h8"), 40.0, timer);
+        VehicleBatchCreator.createVehicles(graphMap, sman, timer, 100);
     }
 }
