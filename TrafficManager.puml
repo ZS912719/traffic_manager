@@ -1,0 +1,102 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+
+ActionListener <|-- Vehicle
+Vehicle o-- BeliefBase
+Vehicle o-- Desire
+Vehicle o-- IntentionExecutor
+BeliefBase .. Desire
+Desire .. IntentionExecutor
+Vehicle o-- DijkstraCalculator
+
+Desire <|-- GoAtGreenDesire
+Desire <|-- StopAtRedDesire
+Desire <|-- FinishTripDesire
+GoAtGreenDesire .. LogicalExpression
+StopAtRedDesire .. LogicalExpression
+FinishTripDesire .. LogicalExpression
+
+LogicalExpression <|-- And
+LogicalExpression <|-- Or
+LogicalExpression <|-- GreaterThanExpression
+LogicalExpression <|-- EqualsExpression
+
+GraphMap o-- Intersection
+GraphMap o-- Vehicle
+
+interface ActionListener{
+actionPerformed()
+}
+
+interface LogicalExpression{
+evaluate()
+}
+
+class And
+
+class EqualsExpression
+
+class GreaterThanExpression
+
+class Or
+
+interface Desire{
+shouldActivate()
+isSatisfied()
+generatePlan()
+}
+
+class Vehicle {
+DijkstraCalculator
+BeliefBase
+List<Desire>
+IntentionExecutor
+generatePath()
+act()
+adjustSpeed()
+}
+
+class BeliefBase{
+GraphMap
+beliefs
+addBelief()
+}
+
+class StopAtRedDesire{
+BeliefBase
+}
+
+class GoAtGreenDesire{
+BeliefBase
+}
+
+class FinishTripDesire{
+BeliefBase
+}
+
+
+class IntentionExecutor{
+Intentions
+enqueue(plan)
+}
+
+class DijkstraCalculator{
+GraphMap
+calculateShortestPath()
+}
+
+
+class Intersection {
+GraphMap
+Q-table
+act()
+}
+
+class GraphMap {
+grid
+Intersection
+act()
+}
+
+@enduml
